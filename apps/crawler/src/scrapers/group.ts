@@ -59,6 +59,21 @@ async function isGroupSelectorVisible(groupSelect: ReturnType<Page["locator"]>):
   return groupSelect.isVisible();
 }
 
+/**
+ * ナビゲーションが別のナビゲーションによって中断されたかどうかを判定する。
+ *
+ * Playwright は中断されたナビゲーションを `NavigationAbortedError` として送出するが、
+ * クライアント側にはプレーンな `Error` としてシリアライズされて届くため、
+ * `instanceof` では判定できず、メッセージ文字列で判定する必要がある。
+ * - ネットワークレベルの中断: `net::ERR_ABORTED` を含む
+ * - ページ内遷移による中断（例: MoneyForwardの自動リダイレクト）: `is interrupted by another navigation` を含む
+ */
+export function isNavigationInterrupted(message: string): boolean {
+  return (
+    message.includes("net::ERR_ABORTED") || message.includes("is interrupted by another navigation")
+  );
+}
+
 async function navigateToHomeWithRetry(page: Page): Promise<void> {
   try {
     await page.goto(mfUrls.home, {
@@ -67,7 +82,7 @@ async function navigateToHomeWithRetry(page: Page): Promise<void> {
   } catch (err) {
     if (page.isClosed()) throw err;
     const message = err instanceof Error ? err.message : String(err);
-    if (!message.includes("net::ERR_ABORTED")) {
+    if (!isNavigationInterrupted(message)) {
       throw err;
     }
     // Retry once if navigation was aborted by a subsequent navigation.
@@ -146,6 +161,23 @@ export async function getCurrentGroup(page: Page): Promise<Group | null> {
 }
 
 /**
+ * グループ切り替え後のページ状態を待つ。
+ *
+ * MoneyForward側が支出目標の設定督促などでページ内リダイレクトを挟むことがあり、
+ * `domcontentloaded` 後にさらにナビゲーションが発生してセレクタが一時的に消えることがある。
+ * この場合 `waitFor` は素の `TimeoutError` を返すため、1回だけホームへ再遷移して待ち直す。
+ */
+async function waitForGroupSelectorAfterSwitch(page: Page): Promise<void> {
+  try {
+    await page.locator(GROUP_SELECTOR).waitFor({ state: "visible", timeout: 5000 });
+  } catch (err) {
+    if (page.isClosed()) throw err;
+    await navigateToHomeWithRetry(page);
+    await page.locator(GROUP_SELECTOR).waitFor({ state: "visible", timeout: 5000 });
+  }
+}
+
+/**
  * 指定したグループに切り替える
  * @param page Playwrightのページオブジェクト
  * @param groupId 切り替え先のグループID（空文字列で「グループ選択なし」）
@@ -172,8 +204,8 @@ export async function switchGroup(page: Page, groupId: string): Promise<Group | 
 
   // ページ遷移またはリロードを待つ
   await page.waitForLoadState("domcontentloaded");
-  // グループセレクタが更新されるまで待機
-  await page.locator('select[name="group_id_hash"]').waitFor({ state: "visible", timeout: 5000 });
+  // グループセレクタが更新されるまで待機（割り込みナビゲーションが挟まった場合は再遷移して待ち直す）
+  await waitForGroupSelectorAfterSwitch(page);
 
   // 切り替え完了の確認（alertやnotificationの表示を待つ）
   // MoneyForwardはページ遷移で切り替わるので、新しいページでセレクタを確認
