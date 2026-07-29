@@ -1,4 +1,5 @@
 import path from "node:path";
+import { getJstTodayIsoDate } from "@mf-dashboard/date-utils";
 import { getDb, schema } from "@mf-dashboard/db";
 import {
   normalizePortfolioCategories,
@@ -83,8 +84,10 @@ describe("DB保存", () => {
     const snapshots = await db.select().from(schema.dailySnapshots).all();
     expect(snapshots.length).toBeGreaterThan(0);
     const latestSnapshot = snapshots[snapshots.length - 1];
-    const today = new Date().toISOString().split("T")[0];
-    expect(latestSnapshot.date).toBe(today);
+    // スナップショットの日付は JST 基準で保存される（save-scraped-data.ts の getJstTodayIsoDate）。
+    // new Date().toISOString() は UTC 基準のため、JST 0:00-8:59（UTC 前日15:00-23:59）に
+    // アサーション評価すると日付がずれる。同じ getJstTodayIsoDate を使い基準を揃える。
+    expect(latestSnapshot.date).toBe(getJstTodayIsoDate());
   });
 
   test("取得したポートフォリオが値を欠落させず保存される", async () => {
