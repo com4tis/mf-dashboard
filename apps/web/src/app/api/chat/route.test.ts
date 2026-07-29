@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   consumeStream: vi.fn<AnyMock>(),
   convertToModelMessages: vi.fn<AnyMock>(),
   createFinanceChatTools: vi.fn<AnyMock>(),
-  hasValidCloudflareAccess: vi.fn<AnyMock>(),
+  hasValidAccess: vi.fn<AnyMock>(),
   acquireChatSlot: vi.fn<AnyMock>(),
   releaseChatSlot: vi.fn<AnyMock>(),
   getAllGroups: vi.fn<AnyMock>(),
@@ -31,8 +31,8 @@ vi.mock("./chat-concurrency", () => ({
   acquireChatSlot: mocks.acquireChatSlot,
 }));
 
-vi.mock("../../../lib/cloudflare-access", () => ({
-  hasValidCloudflareAccess: mocks.hasValidCloudflareAccess,
+vi.mock("../../../lib/access", () => ({
+  hasValidAccess: mocks.hasValidAccess,
 }));
 
 vi.mock("@mf-dashboard/analytics/config", () => ({
@@ -78,7 +78,7 @@ describe("POST /api/chat", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv("AI_API_KEY", "test-api-key");
-    mocks.hasValidCloudflareAccess.mockResolvedValue(true);
+    mocks.hasValidAccess.mockResolvedValue(true);
     mocks.safeValidateUIMessages.mockResolvedValue({ success: true, data: messages });
     mocks.isLLMEnabled.mockReturnValue(true);
     mocks.isDatabaseAvailable.mockReturnValue(true);
@@ -105,7 +105,7 @@ describe("POST /api/chat", () => {
   });
 
   it("rejects unauthenticated requests before reading finance data", async () => {
-    mocks.hasValidCloudflareAccess.mockResolvedValue(false);
+    mocks.hasValidAccess.mockResolvedValue(false);
 
     const res = await POST(request({ messages }));
 

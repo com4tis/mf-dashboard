@@ -30,14 +30,6 @@ apps/crawler/tests/e2e/*.db-shm
 apps/crawler/tests/e2e/*.db-wal
 apps/crawler/tests/e2e/screenshots
 
-# Terraform local state
-terraform/.terraform
-terraform/*.tfstate
-terraform/*.tfstate.*
-terraform/*.tfvars
-terraform/*.tfvars.bak.*
-terraform/.env
-
 # その他
 docs
 *.md

@@ -14,8 +14,8 @@ import {
   streamText,
   type UIMessage,
 } from "ai";
+import { hasValidAccess } from "../../../lib/access";
 import { CHAT_MAX_OUTPUT_TOKENS, CHAT_MESSAGE_MAX_LENGTH } from "../../../lib/chat-limits";
-import { hasValidCloudflareAccess } from "../../../lib/cloudflare-access";
 import { acquireChatSlot } from "./chat-concurrency";
 
 export const maxDuration = 60;
@@ -188,7 +188,7 @@ async function readRequestText(
 }
 
 export async function POST(request: Request): Promise<Response> {
-  if (!(await hasValidCloudflareAccess(request))) {
+  if (!(await hasValidAccess(request))) {
     return errorResponse(401, "UNAUTHORIZED", "認証が必要です。");
   }
 

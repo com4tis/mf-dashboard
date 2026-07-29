@@ -56,19 +56,17 @@ Webアプリ右下の家計AIチャットでは、「先月の食費はいくら
 
 ## システム構成
 
-Docker Composeで次の3サービスを動かす。
+Docker Composeで次の2サービスを動かす。
 
 - **web**: SQLiteのデータを表示するNext.jsアプリ
 - **crawler**: Money Forward MEからデータを取得し、SQLiteへ保存するPlaywrightアプリ
-- **cloudflare**: Cloudflare Tunnelへ接続し、認証済みユーザーへWebアプリを公開
 
 ```mermaid
 flowchart TD
-    U[利用者] -->|Cloudflare Accessで認証| T[cloudflared]
-    T --> W[web]
+    U[利用者] -->|Tailscale経由でアクセス| W[web]
     W -->|手動更新| C[crawler]
     S[supercronic<br/>6:30 / 15:30 JST] --> C
-    O[1Password<br/>認証情報とOTP] --> C
+    E[環境変数<br/>MF_USERNAME/PASSWORD/TOTP_SECRET] --> C
     C --> M[Money Forward ME]
     M --> C
     C -->|保存| D[(SQLite)]
@@ -76,4 +74,4 @@ flowchart TD
     C -->|表示を更新| W
 ```
 
-SQLiteはwebとcrawlerで共有する。外部アクセスはCloudflare TunnelとAccessで保護し、Googleログインとメールアドレスの許可リストを通過したユーザーだけに限定する。詳しい構築手順は[セットアップガイド](docs/setup.md)を参照。
+SQLiteはwebとcrawlerで共有する。外部アクセスはTailscale（tailnet内限定公開）で保護する。詳しい構築手順は[セットアップガイド](docs/setup.md)を参照。

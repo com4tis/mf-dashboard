@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("jose", () => mocks);
 
-const { hasValidCloudflareAccess } = await import("./cloudflare-access");
+const { hasValidAccess } = await import("./access");
 
 function request(token?: string, url = "https://dashboard.example.com/api/chat"): Request {
   return new Request(url, {
@@ -22,7 +22,7 @@ function request(token?: string, url = "https://dashboard.example.com/api/chat")
   });
 }
 
-describe("hasValidCloudflareAccess", () => {
+describe("hasValidAccess", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.unstubAllEnvs();
@@ -32,7 +32,7 @@ describe("hasValidCloudflareAccess", () => {
   });
 
   it("verifies the Access JWT signature, issuer, audience, and expiry", async () => {
-    await expect(hasValidCloudflareAccess(request("access-token"))).resolves.toBe(true);
+    await expect(hasValidAccess(request("access-token"))).resolves.toBe(true);
 
     expect(mocks.createRemoteJWKSet).toHaveBeenCalledWith(
       new URL("https://team.cloudflareaccess.com/cdn-cgi/access/certs"),
@@ -44,22 +44,22 @@ describe("hasValidCloudflareAccess", () => {
   });
 
   it("fails closed when configuration or the assertion is missing", async () => {
-    await expect(hasValidCloudflareAccess(request())).resolves.toBe(false);
+    await expect(hasValidAccess(request())).resolves.toBe(false);
     vi.stubEnv("CLOUDFLARE_ACCESS_AUD", "");
-    await expect(hasValidCloudflareAccess(request("access-token"))).resolves.toBe(false);
+    await expect(hasValidAccess(request("access-token"))).resolves.toBe(false);
     expect(mocks.jwtVerify).not.toHaveBeenCalled();
   });
 
   it("rejects an invalid Access JWT", async () => {
     mocks.jwtVerify.mockRejectedValue(new Error("expired"));
 
-    await expect(hasValidCloudflareAccess(request("access-token"))).resolves.toBe(false);
+    await expect(hasValidAccess(request("access-token"))).resolves.toBe(false);
   });
 
   it("allows the explicit demo-data mode without Access", async () => {
     vi.stubEnv("DEMO_MODE", "true");
 
-    await expect(hasValidCloudflareAccess(request())).resolves.toBe(true);
+    await expect(hasValidAccess(request())).resolves.toBe(true);
   });
 
   it.each(["http://localhost:3000/api/chat", "http://127.0.0.1:3000/api/chat"])(
@@ -68,7 +68,7 @@ describe("hasValidCloudflareAccess", () => {
       vi.stubEnv("NODE_ENV", "development");
       vi.stubEnv("ALLOW_LOCAL_AUTH_BYPASS", "true");
 
-      await expect(hasValidCloudflareAccess(request(undefined, url))).resolves.toBe(true);
+      await expect(hasValidAccess(request(undefined, url))).resolves.toBe(true);
       expect(mocks.jwtVerify).not.toHaveBeenCalled();
     },
   );
@@ -81,7 +81,23 @@ describe("hasValidCloudflareAccess", () => {
     vi.stubEnv("NODE_ENV", nodeEnv);
     vi.stubEnv("ALLOW_LOCAL_AUTH_BYPASS", bypass);
 
-    await expect(hasValidCloudflareAccess(request(undefined, url))).resolves.toBe(false);
+    await expect(hasValidAccess(request(undefined, url))).resolves.toBe(false);
     expect(mocks.jwtVerify).not.toHaveBeenCalled();
   });
+
+  it("allows any request when TRUSTED_PROXY_AUTH is enabled", async () => {
+    vi.stubEnv("TRUSTED_PROXY_AUTH", "true");
+
+    await expect(hasValidAccess(request())).resolves.toBe(true);
+    expect(mocks.jwtVerify).not.toHaveBeenCalled();
+  });
+
+  it.each(["", "false", "TRUE", "1"])(
+    "does not bypass Access for TRUSTED_PROXY_AUTH=%s (strict match required)",
+    async (value) => {
+      vi.stubEnv("TRUSTED_PROXY_AUTH", value);
+
+      await expect(hasValidAccess(request())).resolves.toBe(false);
+    },
+  );
 });

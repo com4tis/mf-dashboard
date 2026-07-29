@@ -70,8 +70,11 @@ ENV NODE_ENV=production \
     PORT=8765 \
     HOME=/home/node
 
-RUN mkdir -p /app/data \
-    && chown node:node /app/data
+RUN groupadd -g 2000 mf-data \
+    && usermod -aG mf-data node \
+    && mkdir -p /app/data \
+    && chown node:mf-data /app/data \
+    && chmod 2775 /app/data
 
 COPY --from=builder --chown=node:node /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=node:node /app/apps/web/.next/static ./apps/web/.next/static

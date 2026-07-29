@@ -42,7 +42,11 @@ RUN package_manager=$(node -p "require('./package.json').packageManager") \
 
 COPY . .
 
-RUN mkdir -p /app/data /app/crawler-state \
+RUN groupadd -g 2000 mf-data \
+    && usermod -aG mf-data pwuser \
+    && mkdir -p /app/data /app/crawler-state \
+    && chown pwuser:mf-data /app/data \
+    && chmod 2775 /app/data \
     && chmod 1777 /app/crawler-state \
     && chmod 0755 /app/docker/crawler/entrypoint.sh
 USER pwuser

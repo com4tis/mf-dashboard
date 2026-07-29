@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { hasValidCloudflareAccess } from "../../../../lib/cloudflare-access";
+import { hasValidAccess } from "../../../../lib/access";
 import {
   parseCrawlerRefreshStatus,
   unavailableCrawlerRefreshStatus,
@@ -120,7 +120,7 @@ async function proxyCrawlerEvents(request: Request) {
 }
 
 export async function GET(request: Request) {
-  if (!(await hasValidCloudflareAccess(request))) {
+  if (!(await hasValidAccess(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -132,7 +132,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!(await hasValidCloudflareAccess(request))) {
+  if (!(await hasValidAccess(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

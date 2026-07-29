@@ -22,39 +22,26 @@ services:
         NEXT_PUBLIC_SIMULATOR_BASE_PENSION: ${NEXT_PUBLIC_SIMULATOR_BASE_PENSION:-}
         NEXT_PUBLIC_SIMULATOR_PENSION_START_AGE: ${NEXT_PUBLIC_SIMULATOR_PENSION_START_AGE:-}
         NEXT_PUBLIC_SIMULATOR_MONTHLY_OTHER_INCOME: ${NEXT_PUBLIC_SIMULATOR_MONTHLY_OTHER_INCOME:-}
-    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     environment:
       AI_CHAT_PRESETS: ${AI_CHAT_PRESETS:-}
       AI_API_KEY: ${AI_API_KEY:-}
       AI_MODEL: ${AI_MODEL:-}
       AI_PROVIDER: ${AI_PROVIDER:-}
       CRAWLER_URL: http://crawler:8766
-      CLOUDFLARE_ACCESS_AUD: ${CLOUDFLARE_ACCESS_AUD:?Set CLOUDFLARE_ACCESS_AUD}
-      CLOUDFLARE_ACCESS_TEAM_DOMAIN: ${CLOUDFLARE_ACCESS_TEAM_DOMAIN:?Set CLOUDFLARE_ACCESS_TEAM_DOMAIN}
       DASHBOARD_URL: ${DASHBOARD_URL:?Set DASHBOARD_URL to the public dashboard URL}
       REFRESH_TOKEN: ${REFRESH_TOKEN:?Set REFRESH_TOKEN}
+      TRUSTED_PROXY_AUTH: ${TRUSTED_PROXY_AUTH:-}
       TZ: Asia/Tokyo
     volumes:
-      - ./data:/app/data
-    expose:
-      - "8765"
-    restart: unless-stopped
-
-  cloudflared:
-    image: cloudflare/cloudflared:2026.7.3
-    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
-    command: tunnel --no-autoupdate run --token-file /run/secrets/tunnel_token
-    secrets:
-      - tunnel_token
-    depends_on:
-      - web
+      - mf_data:/app/data
+    ports:
+      - "127.0.0.1:8765:8765"
     restart: unless-stopped
 
   crawler:
     build:
       context: .
       dockerfile: docker/crawler/Dockerfile
-    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     environment:
       AI_API_KEY: ${AI_API_KEY:-}
       AI_MODEL: ${AI_MODEL:-}
@@ -70,11 +57,10 @@ services:
       HEADED: ${HEADED:-}
       HOME: /tmp
       MAX_WAIT_MINUTES: ${MAX_WAIT_MINUTES:-}
+      MF_PASSWORD: ${MF_PASSWORD:?Set MF_PASSWORD}
+      MF_TOTP_SECRET: ${MF_TOTP_SECRET:-}
+      MF_USERNAME: ${MF_USERNAME:?Set MF_USERNAME}
       NEXT_PUBLIC_BASE_PATH: ${NEXT_PUBLIC_BASE_PATH:-}
-      OP_ITEM: ${OP_ITEM:-}
-      OP_SERVICE_ACCOUNT_TOKEN: ${OP_SERVICE_ACCOUNT_TOKEN:-}
-      OP_TOTP_FIELD: ${OP_TOTP_FIELD:-}
-      OP_VAULT: ${OP_VAULT:-}
       REFRESH_MAX_ATTEMPTS: ${REFRESH_MAX_ATTEMPTS:-}
       REFRESH_RETRY_DELAY: ${REFRESH_RETRY_DELAY:-}
       REFRESH_TOKEN: ${REFRESH_TOKEN:?Set REFRESH_TOKEN}
@@ -85,7 +71,7 @@ services:
       TZ: Asia/Tokyo
       WEB_URL: ${WEB_URL:-http://web:8765}
     volumes:
-      - ./data:/app/data
+      - mf_data:/app/data
       - crawler_auth_state:/app/crawler-state
     expose:
       - "8766"
@@ -93,9 +79,6 @@ services:
       - web
     restart: unless-stopped
 
-secrets:
-  tunnel_token:
-    file: ./secrets/cloudflared-token
-
 volumes:
   crawler_auth_state:
+  mf_data:

@@ -12,6 +12,14 @@ function hasLocalDevelopmentAccess(request: Request): boolean {
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
 }
 
+/**
+ * 前段（Tailscale 等）で認証済みのネットワークにのみ公開する構成で使う。
+ * このフラグを立てる場合、ポートを tailnet 内アドレスにのみバインドすること。
+ */
+function hasTrustedProxyAuth(): boolean {
+  return process.env.TRUSTED_PROXY_AUTH === "true";
+}
+
 function getTeamDomain(): string | null {
   const configuredDomain = process.env.CLOUDFLARE_ACCESS_TEAM_DOMAIN?.trim();
   if (!configuredDomain) return null;
@@ -37,8 +45,14 @@ function getJwks(teamDomain: string): ReturnType<typeof createRemoteJWKSet> {
   return cachedJwks;
 }
 
-export async function hasValidCloudflareAccess(request: Request): Promise<boolean> {
-  if (process.env.DEMO_MODE === "true" || hasLocalDevelopmentAccess(request)) return true;
+export async function hasValidAccess(request: Request): Promise<boolean> {
+  if (
+    process.env.DEMO_MODE === "true" ||
+    hasTrustedProxyAuth() ||
+    hasLocalDevelopmentAccess(request)
+  ) {
+    return true;
+  }
 
   const teamDomain = getTeamDomain();
   const audience = process.env.CLOUDFLARE_ACCESS_AUD?.trim();
