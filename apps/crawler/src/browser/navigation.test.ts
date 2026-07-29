@@ -26,9 +26,9 @@ describe("isNavigationInterrupted", () => {
 describe("gotoWithNavigationRetry", () => {
   function createMockPage(gotoImpl: (...args: unknown[]) => unknown, isClosed = false) {
     return {
-      goto: vi.fn(gotoImpl),
-      waitForTimeout: vi.fn().mockResolvedValue(undefined),
-      isClosed: vi.fn().mockReturnValue(isClosed),
+      goto: vi.fn<(...args: unknown[]) => unknown>(gotoImpl),
+      waitForTimeout: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+      isClosed: vi.fn<() => boolean>().mockReturnValue(isClosed),
       // biome-ignore lint: テスト用の最小モック
     } as any;
   }
