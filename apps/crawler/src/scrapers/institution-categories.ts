@@ -1,5 +1,6 @@
 import { mfUrls } from "@mf-dashboard/meta/urls";
 import type { Page } from "playwright";
+import { gotoWithNavigationRetry } from "../browser/navigation.js";
 import { debug } from "../logger.js";
 
 export type InstitutionCategoryEntry =
@@ -69,7 +70,7 @@ export function associateInstitutionCategories(
 export async function scrapeInstitutionCategories(page: Page): Promise<Map<string, string>> {
   debug("Scraping institution categories from top page...");
 
-  await page.goto(mfUrls.home, { waitUntil: "domcontentloaded" });
+  await gotoWithNavigationRetry(page, mfUrls.home, { waitUntil: "domcontentloaded" });
   await page.locator(".facilities.accounts-list").first().waitFor({ state: "attached" });
 
   const entries = await page.evaluate(extractInstitutionCategoryEntries);

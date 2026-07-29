@@ -1,13 +1,14 @@
 import type { RegisteredAccounts, AccountStatus } from "@mf-dashboard/db/types";
 import { mfUrls } from "@mf-dashboard/meta/urls";
 import type { Page } from "playwright";
+import { gotoWithNavigationRetry } from "../browser/navigation.js";
 import { debug } from "../logger.js";
 import { parseJapaneseNumber } from "../parsers.js";
 
 export async function getRegisteredAccounts(page: Page): Promise<RegisteredAccounts> {
   debug("Getting registered accounts from /accounts page...");
 
-  await page.goto(mfUrls.accounts, {
+  await gotoWithNavigationRetry(page, mfUrls.accounts, {
     waitUntil: "domcontentloaded",
   });
   // テーブルが表示されるまで待機

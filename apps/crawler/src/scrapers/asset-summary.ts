@@ -1,12 +1,13 @@
 import type { AssetSummary } from "@mf-dashboard/db/types";
 import { mfUrls } from "@mf-dashboard/meta/urls";
 import type { Page } from "playwright";
+import { gotoWithNavigationRetry } from "../browser/navigation.js";
 import { debug } from "../logger.js";
 
 export async function getAssetSummary(page: Page): Promise<AssetSummary> {
   debug("Getting asset summary from top page...");
 
-  await page.goto(mfUrls.home, {
+  await gotoWithNavigationRetry(page, mfUrls.home, {
     waitUntil: "domcontentloaded",
     timeout: 30000,
   });

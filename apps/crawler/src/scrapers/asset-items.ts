@@ -1,13 +1,14 @@
 import type { AssetItem } from "@mf-dashboard/db/types";
 import { mfUrls } from "@mf-dashboard/meta/urls";
 import type { Page } from "playwright";
+import { gotoWithNavigationRetry } from "../browser/navigation.js";
 import { debug } from "../logger.js";
 import { calculateChange } from "../parsers.js";
 
 export async function getAssetItems(page: Page): Promise<AssetItem[]> {
   debug("Getting asset items from bs/history page...");
 
-  await page.goto(mfUrls.assetHistory, {
+  await gotoWithNavigationRetry(page, mfUrls.assetHistory, {
     waitUntil: "domcontentloaded",
   });
   // テーブルが表示されるまで待機

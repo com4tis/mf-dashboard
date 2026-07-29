@@ -1,35 +1,17 @@
 import type { RefreshResult } from "@mf-dashboard/db/types";
 import { mfUrls } from "@mf-dashboard/meta/urls";
 import type { Page } from "playwright";
+import { gotoWithNavigationRetry } from "../browser/navigation.js";
 import { debug, info, warn } from "../logger.js";
 
 const DEFAULT_MAX_WAIT_MINUTES = 20;
 const POLL_INTERVAL_MS = 30000; // 30 seconds
-const NAVIGATION_RETRY_DELAY_MS = 1000;
 
 export async function navigateToAccountsPage(page: Page): Promise<void> {
-  const MAX_RETRIES = 1;
-
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      await page.goto(mfUrls.accounts, {
-        waitUntil: "domcontentloaded",
-      });
-      await page.waitForLoadState("networkidle");
-      return;
-    } catch (err) {
-      if (page.isClosed()) {
-        throw err;
-      }
-
-      const message = err instanceof Error ? err.message : String(err);
-      if (!message.includes("net::ERR_ABORTED") || attempt === MAX_RETRIES) {
-        throw err;
-      }
-
-      await page.waitForTimeout(NAVIGATION_RETRY_DELAY_MS);
-    }
-  }
+  await gotoWithNavigationRetry(page, mfUrls.accounts, {
+    waitUntil: "domcontentloaded",
+  });
+  await page.waitForLoadState("networkidle");
 }
 
 export async function getRefreshStatus(
@@ -111,7 +93,7 @@ export async function clickRefreshButton(
   debug("Looking for refresh button...");
 
   // Navigate to home and click refresh button
-  await page.goto(mfUrls.home);
+  await gotoWithNavigationRetry(page, mfUrls.home);
   await page.waitForLoadState("networkidle");
 
   const refreshButton = page.locator('a:has-text("一括更新")').first();

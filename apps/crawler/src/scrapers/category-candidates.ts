@@ -1,5 +1,6 @@
 import { mfUrls } from "@mf-dashboard/meta/urls";
 import type { Page } from "playwright";
+import { gotoWithNavigationRetry } from "../browser/navigation.js";
 import type { CategoryCandidate } from "../category-decision/types.js";
 import { debug } from "../logger.js";
 
@@ -79,7 +80,7 @@ export function buildCategoryCandidates(
 }
 
 export async function scrapeCategoryCandidates(page: Page): Promise<CategoryCandidate[]> {
-  await page.goto(mfUrls.categoryRules, {
+  await gotoWithNavigationRetry(page, mfUrls.categoryRules, {
     waitUntil: "domcontentloaded",
     timeout: 30000,
   });

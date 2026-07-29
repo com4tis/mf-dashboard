@@ -2,6 +2,7 @@ import { getJstDateParts } from "@mf-dashboard/date-utils";
 import type { CashFlowSummary, CashFlowItem } from "@mf-dashboard/db/types";
 import { mfUrls } from "@mf-dashboard/meta/urls";
 import type { Locator, Page } from "playwright";
+import { gotoWithNavigationRetry } from "../browser/navigation.js";
 import { getHistoryMonth } from "../history-months.js";
 import { log, debug } from "../logger.js";
 import { parseJapaneseNumber, convertDateToIso } from "../parsers.js";
@@ -252,7 +253,7 @@ export function buildMonthRange(month: string): { from: string; to: string } {
 export async function scrapeCashFlowMonth(page: Page, month: string): Promise<CashFlowSummary> {
   const range = buildMonthRange(month);
 
-  await page.goto(mfUrls.cashFlowWithRange(range.from, range.to), {
+  await gotoWithNavigationRetry(page, mfUrls.cashFlowWithRange(range.from, range.to), {
     waitUntil: "domcontentloaded",
   });
   await page.locator("#cf-detail-table").waitFor({ state: "visible", timeout: 10000 });
@@ -288,7 +289,7 @@ export async function scrapeCashFlowHistory(
 ): Promise<CashFlowHistoryResult[]> {
   log(`Scraping cash flow history for ${monthsToScrape} months...`);
 
-  await page.goto(mfUrls.cashFlow, { waitUntil: "domcontentloaded" });
+  await gotoWithNavigationRetry(page, mfUrls.cashFlow, { waitUntil: "domcontentloaded" });
   // テーブルが表示されるまで待機
   await page.locator("#cf-detail-table").waitFor({ state: "visible", timeout: 10000 });
 

@@ -1,13 +1,14 @@
 import type { AssetHistory, AssetHistoryPoint } from "@mf-dashboard/db/types";
 import { mfUrls } from "@mf-dashboard/meta/urls";
 import type { Page } from "playwright";
+import { gotoWithNavigationRetry } from "../browser/navigation.js";
 import { debug } from "../logger.js";
 import { parseJapaneseNumber } from "../parsers.js";
 
 export async function getAssetHistory(page: Page): Promise<AssetHistory> {
   debug("Getting asset history from /bs/history page...");
 
-  await page.goto(mfUrls.assetHistory, {
+  await gotoWithNavigationRetry(page, mfUrls.assetHistory, {
     waitUntil: "domcontentloaded",
   });
   // テーブルが表示されるまで待機

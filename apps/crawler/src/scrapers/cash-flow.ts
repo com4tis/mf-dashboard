@@ -2,6 +2,7 @@ import { getJstYearMonthKey } from "@mf-dashboard/date-utils";
 import type { CashFlowSummary, CashFlowItem } from "@mf-dashboard/db/types";
 import { mfUrls } from "@mf-dashboard/meta/urls";
 import type { Page } from "playwright";
+import { gotoWithNavigationRetry } from "../browser/navigation.js";
 import { debug } from "../logger.js";
 import { parseJapaneseNumber } from "../parsers.js";
 import { SUMMARY_COLUMNS, parseDetailRow } from "./cash-flow-history.js";
@@ -9,7 +10,7 @@ import { SUMMARY_COLUMNS, parseDetailRow } from "./cash-flow-history.js";
 export async function getCashFlow(page: Page): Promise<CashFlowSummary> {
   debug("Getting cash flow from /cf page...");
 
-  await page.goto(mfUrls.cashFlow, { waitUntil: "domcontentloaded" });
+  await gotoWithNavigationRetry(page, mfUrls.cashFlow, { waitUntil: "domcontentloaded" });
   // テーブルが表示されるまで待機
   await page.locator("#cf-detail-table").waitFor({ state: "visible", timeout: 10000 });
 

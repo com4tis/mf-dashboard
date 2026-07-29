@@ -2,12 +2,13 @@ import type { SpendingTargetsData, SpendingTarget } from "@mf-dashboard/db/types
 import { LARGE_CATEGORY_NAME_BY_ID } from "@mf-dashboard/meta/categories";
 import { mfUrls } from "@mf-dashboard/meta/urls";
 import type { Page } from "playwright";
+import { gotoWithNavigationRetry } from "../browser/navigation.js";
 import { debug } from "../logger.js";
 
 export async function getSpendingTargets(page: Page): Promise<SpendingTargetsData> {
   debug("Getting spending targets from /spending_targets/edit...");
 
-  await page.goto(mfUrls.spendingTargets, {
+  await gotoWithNavigationRetry(page, mfUrls.spendingTargets, {
     waitUntil: "domcontentloaded",
   });
   // テーブルが表示されるまで待機

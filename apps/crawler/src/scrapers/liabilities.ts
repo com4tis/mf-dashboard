@@ -1,13 +1,14 @@
 import type { Liabilities, LiabilityItem } from "@mf-dashboard/db/types";
 import { mfUrls } from "@mf-dashboard/meta/urls";
 import type { Page } from "playwright";
+import { gotoWithNavigationRetry } from "../browser/navigation.js";
 import { debug } from "../logger.js";
 import { parseJapaneseNumber } from "../parsers.js";
 
 export async function getLiabilities(page: Page): Promise<Liabilities> {
   debug("Getting liabilities from /bs/liability page...");
 
-  await page.goto(mfUrls.liability, {
+  await gotoWithNavigationRetry(page, mfUrls.liability, {
     waitUntil: "domcontentloaded",
   });
   // ページ読み込み完了を待機

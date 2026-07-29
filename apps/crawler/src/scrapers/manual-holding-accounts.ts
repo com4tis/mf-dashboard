@@ -1,6 +1,7 @@
 import type { RegisteredAccounts } from "@mf-dashboard/db/types";
 import { mfUrls } from "@mf-dashboard/meta/urls";
 import type { Locator, Page } from "playwright";
+import { gotoWithNavigationRetry } from "../browser/navigation.js";
 import { debug, warn } from "../logger.js";
 import { extractAccountMfIdFromDetailUrl, isExpectedAccountDetailPage } from "./account-detail.js";
 
@@ -114,9 +115,11 @@ export async function getManualHoldingAccountMap(
   for (const account of manualAccounts) {
     const expectedPath = `/accounts/show_manual/${encodeURIComponent(account.mfId)}`;
     try {
-      const response = await page.goto(mfUrls.accountDetail(account.mfId, "show_manual"), {
-        waitUntil: "domcontentloaded",
-      });
+      const response = await gotoWithNavigationRetry(
+        page,
+        mfUrls.accountDetail(account.mfId, "show_manual"),
+        { waitUntil: "domcontentloaded" },
+      );
       if (!isExpectedAccountDetailPage(response?.ok() === true, page.url(), expectedPath)) {
         skippedPageCount++;
         continue;

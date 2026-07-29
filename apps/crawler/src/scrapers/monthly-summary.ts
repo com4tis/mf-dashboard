@@ -3,6 +3,7 @@
  * 6ヶ月分のデータを1回のアクセスで取得できる
  */
 import type { Page } from "playwright";
+import { gotoWithNavigationRetry } from "../browser/navigation.js";
 import { log, debug } from "../logger.js";
 import { parseJapaneseNumber } from "../parsers.js";
 
@@ -29,7 +30,7 @@ export function parseMonthlySummaryMonths(headers: string[]): string[] {
 export async function scrapeMonthlySummary(page: Page): Promise<MonthlySummaryItem[]> {
   log("Scraping monthly summary from /cf/monthly...");
 
-  await page.goto("https://moneyforward.com/cf/monthly", {
+  await gotoWithNavigationRetry(page, "https://moneyforward.com/cf/monthly", {
     waitUntil: "domcontentloaded",
   });
   // テーブルが表示されるまで待機

@@ -1,6 +1,7 @@
 import type { Group } from "@mf-dashboard/db/types";
 import { mfUrls } from "@mf-dashboard/meta/urls";
 import type { Page } from "playwright";
+import { gotoWithNavigationRetry } from "../browser/navigation.js";
 import { debug, log, warn } from "../logger.js";
 
 /** 「グループ選択なし」を表す特別なID */
@@ -59,38 +60,8 @@ async function isGroupSelectorVisible(groupSelect: ReturnType<Page["locator"]>):
   return groupSelect.isVisible();
 }
 
-/**
- * ナビゲーションが別のナビゲーションによって中断されたかどうかを判定する。
- *
- * Playwright は中断されたナビゲーションを `NavigationAbortedError` として送出するが、
- * クライアント側にはプレーンな `Error` としてシリアライズされて届くため、
- * `instanceof` では判定できず、メッセージ文字列で判定する必要がある。
- * - ネットワークレベルの中断: `net::ERR_ABORTED` を含む
- * - ページ内遷移による中断（例: MoneyForwardの自動リダイレクト）: `is interrupted by another navigation` を含む
- */
-export function isNavigationInterrupted(message: string): boolean {
-  return (
-    message.includes("net::ERR_ABORTED") || message.includes("is interrupted by another navigation")
-  );
-}
-
 async function navigateToHomeWithRetry(page: Page): Promise<void> {
-  try {
-    await page.goto(mfUrls.home, {
-      waitUntil: "domcontentloaded",
-    });
-  } catch (err) {
-    if (page.isClosed()) throw err;
-    const message = err instanceof Error ? err.message : String(err);
-    if (!isNavigationInterrupted(message)) {
-      throw err;
-    }
-    // Retry once if navigation was aborted by a subsequent navigation.
-    await page.waitForTimeout(1000);
-    await page.goto(mfUrls.home, {
-      waitUntil: "domcontentloaded",
-    });
-  }
+  await gotoWithNavigationRetry(page, mfUrls.home, { waitUntil: "domcontentloaded" });
 }
 
 /**

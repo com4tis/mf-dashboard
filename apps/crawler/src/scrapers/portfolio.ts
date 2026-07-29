@@ -2,6 +2,7 @@ import type { Portfolio, PortfolioItem, RegisteredAccounts } from "@mf-dashboard
 import { ASSET_CATEGORIES } from "@mf-dashboard/meta/categories";
 import { mfUrls } from "@mf-dashboard/meta/urls";
 import type { Locator, Page } from "playwright";
+import { gotoWithNavigationRetry } from "../browser/navigation.js";
 import { debug, warn } from "../logger.js";
 import { parseDecimalNumber, parseJapaneseNumber, parsePercentage } from "../parsers.js";
 import { extractAccountMfIdFromDetailUrl, isExpectedAccountDetailPage } from "./account-detail.js";
@@ -391,7 +392,7 @@ export async function getLinkedAccountPnsSource(
   for (const account of linkedAccounts) {
     const expectedPath = `/accounts/show/${encodeURIComponent(account.mfId)}`;
     try {
-      const response = await page.goto(mfUrls.accountDetail(account.mfId), {
+      const response = await gotoWithNavigationRetry(page, mfUrls.accountDetail(account.mfId), {
         waitUntil: "domcontentloaded",
       });
       if (!isExpectedAccountDetailPage(response?.ok() === true, page.url(), expectedPath)) {
@@ -631,7 +632,7 @@ export async function getPortfolio(
   debug("Getting portfolio from /bs/portfolio page...");
 
   // Get official totalAssets from bs/history (more accurate than summing items)
-  await page.goto(mfUrls.assetHistory, { waitUntil: "domcontentloaded" });
+  await gotoWithNavigationRetry(page, mfUrls.assetHistory, { waitUntil: "domcontentloaded" });
   // テーブルが表示されるまで待機
   await page.locator("table.table-bordered").waitFor({ state: "visible", timeout: 10000 });
 
@@ -646,7 +647,7 @@ export async function getPortfolio(
   }
 
   // Get individual items from bs/portfolio
-  await page.goto(mfUrls.portfolio, { waitUntil: "domcontentloaded" });
+  await gotoWithNavigationRetry(page, mfUrls.portfolio, { waitUntil: "domcontentloaded" });
   // ポートフォリオコンテンツが表示されるまで待機
   await page.locator("h1.heading-normal").first().waitFor({ state: "visible", timeout: 10000 });
 
